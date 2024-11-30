@@ -1,0 +1,8 @@
+# Session lock file
+.session.lock
+
+# Rust targets
+target
+
+# Cargo lock
+Cargo.lock
