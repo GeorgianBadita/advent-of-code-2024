@@ -6,3 +6,7 @@ target
 
 # Cargo lock
 Cargo.lock
+
+# Ignore input output files
+input.txt
+output-*.txt

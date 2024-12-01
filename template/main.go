@@ -1,7 +1,6 @@
 package main
 
 import (
-	"aoc-2024/datastructures"
 	"bufio"
 	"os"
 )
@@ -33,7 +32,21 @@ func main() {
 		println(err)
 		panic("Error reading from " + IN_FILE_PATH)
 	}
+
 	println(data)
 
-	datastructures.NewPriorityQueue()
+	if len(os.Args) != 2 {
+		panic("Exactly one arg is expected")
+	}
+	arg := os.Args[1]
+
+	if arg != "1" && arg != "2" {
+		panic("Arg can only be 1 or 2 for part 1 ore part 2 of the problem respectively")
+	}
+
+	if arg == "1" {
+		// placeholder for part 1
+	} else {
+		// placeholder for part 2
+	}
 }
