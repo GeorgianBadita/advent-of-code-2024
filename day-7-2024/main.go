@@ -1,6 +1,7 @@
 package main
 
 import (
+	"aoc-2024/datastructures"
 	"bufio"
 	"math"
 	"os"
@@ -80,6 +81,19 @@ func solvePartOne(equations []Equation) int {
 	return res
 }
 
+func numDigits(a int) int {
+	if a == 0 {
+		return 1
+	}
+
+	numDigits := 0
+	for a != 0 {
+		numDigits += 1
+		a /= 10
+	}
+	return numDigits
+}
+
 func solvePartTwo(equations []Equation) int {
 	res := 0
 	for _, eq := range equations {
@@ -99,8 +113,7 @@ func solvePartTwo(equations []Equation) int {
 				} else if operator == 1 {
 					result *= eq.operators[p+1]
 				} else {
-					numDigits := int(math.Log10(float64(eq.operators[p+1]))) + 1
-					result = result*int(math.Pow(10, float64(numDigits))) + eq.operators[p+1]
+					result = result*datastructures.Pow(10, numDigits(eq.operators[p+1])) + eq.operators[p+1]
 				}
 				tryCpy = tryCpy / 3
 			}
