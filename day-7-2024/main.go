@@ -91,7 +91,6 @@ func solvePartOne(equations []Equation) int {
 func solvePartTwo(equations []Equation) int {
 	res := 0
 	for _, eq := range equations {
-		// pow := 1 << (len(eq.operators) - 1)
 		pow := int(math.Pow(3, float64(len(eq.operators)-1)))
 		for try := 0; try < pow; try++ {
 			config := []int{}
