@@ -53,31 +53,23 @@ func parseInputToEq(lines []string) []Equation {
 func solvePartOne(equations []Equation) int {
 	res := 0
 	for _, eq := range equations {
-		pow := 1 << (len(eq.operators) - 1)
+		numOperators := len(eq.operators) - 1
+		pow := 1 << numOperators
 		for try := 0; try < pow; try++ {
-			config := []int{}
-
-			for p := 0; p < len(eq.operators)-1; p++ {
-				pthBit := (1 << p) & try
-				if pthBit > 0 {
-					config = append(config, 1)
-				} else {
-					config = append(config, 0)
-				}
-
-			}
-
 			result := eq.operators[0]
-			for idx, elem := range config {
+
+			for p := 0; p < numOperators; p++ {
 				if result > eq.result {
 					break
 				}
-				if elem == 0 {
-					result += eq.operators[idx+1]
+				pthBit := (1 << p) & try
+				if pthBit == 0 {
+					result += eq.operators[p+1]
 				} else {
-					result *= eq.operators[idx+1]
+					result *= eq.operators[p+1]
 				}
 			}
+
 			if result == eq.result {
 				res += eq.result
 				break
@@ -91,32 +83,28 @@ func solvePartOne(equations []Equation) int {
 func solvePartTwo(equations []Equation) int {
 	res := 0
 	for _, eq := range equations {
-		pow := int(math.Pow(3, float64(len(eq.operators)-1)))
-		for try := 0; try < pow; try++ {
-			config := []int{}
-			tryCpy := try
-			for p := 0; p < len(eq.operators)-1; p++ {
-				config = append(config, tryCpy%3)
-				tryCpy = tryCpy / 3
-			}
+		numOperators := len(eq.operators) - 1
+		pow := int(math.Pow(3, float64(numOperators)))
 
+		for try := 0; try < pow; try++ {
+			tryCpy := try
 			result := eq.operators[0]
-			for idx, elem := range config {
+			for p := 0; p < numOperators; p++ {
+				operator := tryCpy % 3
 				if result > eq.result {
 					break
 				}
-				if elem == 0 {
-					result += eq.operators[idx+1]
-				} else if elem == 1 {
-					result *= eq.operators[idx+1]
+				if operator == 0 {
+					result += eq.operators[p+1]
+				} else if operator == 1 {
+					result *= eq.operators[p+1]
 				} else {
-					left := strconv.Itoa(result)
-					right := strconv.Itoa(eq.operators[idx+1])
-					concat := left + right
-					num, _ := strconv.Atoi(concat)
-					result = num
+					numDigits := int(math.Log10(float64(eq.operators[p+1]))) + 1
+					result = result*int(math.Pow(10, float64(numDigits))) + eq.operators[p+1]
 				}
+				tryCpy = tryCpy / 3
 			}
+
 			if result == eq.result {
 				res += eq.result
 				break
