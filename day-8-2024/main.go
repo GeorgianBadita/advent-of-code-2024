@@ -109,15 +109,27 @@ func solvePartTwo(matrix [][]rune) int {
 	for _, points := range antenas {
 		for idx := 0; idx < len(points)-1; idx++ {
 			for jdx := idx + 1; jdx < len(points); jdx++ {
-				for r := 0; r < len(matrix); r++ {
-					for c := 0; c < len(matrix[0]); c++ {
-						pointOnLine := testPointIsOnLineAB(points[idx], points[jdx], Point{r, c})
-						if pointOnLine {
-							if _, ok := seen[Point{r, c}]; !ok {
-								seen[Point{r, c}] = true
-							}
-						}
+				ax, bx := points[idx].x, points[jdx].x
+				ay, by := points[idx].y, points[jdx].y
+
+				cx := ax
+				cy := ay
+				for validCoords(matrix, Point{cx, cy}) && testPointIsOnLineAB(points[idx], points[jdx], Point{cx, cy}) {
+					if _, ok := seen[Point{cx, cy}]; !ok {
+						seen[Point{cx, cy}] = true
 					}
+					cx -= bx - ax
+					cy -= by - ay
+				}
+
+				dx := bx
+				dy := by
+				for validCoords(matrix, Point{dx, dy}) && testPointIsOnLineAB(points[idx], points[jdx], Point{dx, dy}) {
+					if _, ok := seen[Point{dx, dy}]; !ok {
+						seen[Point{dx, dy}] = true
+					}
+					dx += bx - ax
+					dy += by - ay
 				}
 			}
 		}
