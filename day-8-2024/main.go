@@ -57,7 +57,7 @@ func validCoords(matrix [][]rune, p Point) bool {
 	return p.x >= 0 && p.x < len(matrix) && p.y >= 0 && p.y < len(matrix[0])
 }
 
-func collectAntenas(matrix [][]rune) map[rune][]Point {
+func collectAntennas(matrix [][]rune) map[rune][]Point {
 	res := map[rune][]Point{}
 	for idx := 0; idx < len(matrix); idx++ {
 		for jdx := 0; jdx < len(matrix[0]); jdx++ {
@@ -77,9 +77,9 @@ func collectAntenas(matrix [][]rune) map[rune][]Point {
 }
 
 func solvePartOne(matrix [][]rune) int {
-	antenas := collectAntenas(matrix)
+	antennas := collectAntennas(matrix)
 	seen := map[Point]bool{}
-	for _, points := range antenas {
+	for _, points := range antennas {
 		for idx := 0; idx < len(points)-1; idx++ {
 			for jdx := idx + 1; jdx < len(points); jdx++ {
 				iSimJ := getSymetricOfARelativeToB(points[idx], points[jdx])
@@ -104,9 +104,9 @@ func solvePartOne(matrix [][]rune) int {
 }
 
 func solvePartTwo(matrix [][]rune) int {
-	antenas := collectAntenas(matrix)
+	antennas := collectAntennas(matrix)
 	seen := map[Point]bool{}
-	for _, points := range antenas {
+	for _, points := range antennas {
 		for idx := 0; idx < len(points)-1; idx++ {
 			for jdx := idx + 1; jdx < len(points); jdx++ {
 				ax, bx := points[idx].x, points[jdx].x
