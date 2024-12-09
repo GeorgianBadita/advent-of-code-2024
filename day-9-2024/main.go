@@ -3,7 +3,6 @@ package main
 import (
 	"aoc-2024/datastructures"
 	"bufio"
-	"fmt"
 	"os"
 	"strconv"
 )
@@ -71,18 +70,6 @@ func expandString(memory []rune) []int {
 	return res
 }
 
-func printMemoryArr(memory []int) {
-	str := ""
-	for _, elem := range memory {
-		if elem == -1 {
-			str += "."
-		} else {
-			str += fmt.Sprintf("%d", elem)
-		}
-	}
-	fmt.Println(str)
-}
-
 func solvePartOne(memory []rune) uint {
 	expandedMemory := expandString(memory)
 	pointPtr := 0
@@ -112,26 +99,6 @@ func solvePartOne(memory []rune) uint {
 	}
 
 	return uint(total_res)
-}
-
-func assertZones(zones map[int]datastructures.PriorityQueue, mem []int) {
-	for _, spans := range zones {
-		for _, s := range spans {
-			span := s.(Span)
-			spanArr := mem[span.start : span.end+1]
-			for _, v := range spanArr {
-				if v != -1 {
-					panic("Incorrect zone segments")
-				}
-			}
-			if span.end+1 < len(mem) && mem[span.end+1] == -1 {
-				panic("Incorrect zone segments")
-			}
-			if span.start-1 >= 0 && mem[span.start-1] == -1 {
-				panic("Incorrect zone segments")
-			}
-		}
-	}
 }
 
 func solvePartTwo(memory []rune) uint64 {
@@ -168,13 +135,8 @@ func solvePartTwo(memory []rune) uint64 {
 		}
 	}
 
-	assertZones(emptyZones, expandedMemory)
 	// Normally we should do another check here, but the input has an odd length
-	// si it cannot end with .....
-
-	// fmt.Println(zoneStart)
-	// printMemoryArr(expandedMemory)
-	// fmt.Println(emptyZones)
+	// so it cannot end with .....
 
 	for memoryPtr := len(expandedMemory) - 1; memoryPtr >= 0; {
 		regionEnd := memoryPtr + 1
@@ -182,16 +144,18 @@ func solvePartTwo(memory []rune) uint64 {
 			memoryPtr -= 1
 		}
 
-		printMemoryArr(expandedMemory[memoryPtr+1 : regionEnd])
-
 		size := regionEnd - memoryPtr - 1
 		bestDiff := datastructures.Pow(10, 9)
 		bestSize := -1
+		bestStart := datastructures.Pow(10, 9)
 
-		for zoneSize := range emptyZones {
-			if zoneSize >= size && zoneSize-size < bestDiff {
+		for zoneSize, spans := range emptyZones {
+			peek := *spans.Peek()
+			firstSpan := peek.(Span)
+			if zoneSize >= size && firstSpan.start < bestStart {
 				bestDiff = zoneSize - size
 				bestSize = zoneSize
+				bestStart = firstSpan.start
 			}
 		}
 
@@ -239,8 +203,6 @@ func solvePartTwo(memory []rune) uint64 {
 		}
 	}
 
-	printMemoryArr(expandedMemory)
-
 	total_res := uint64(0)
 	for idx, val := range expandedMemory {
 		if val != -1 {
@@ -249,7 +211,6 @@ func solvePartTwo(memory []rune) uint64 {
 
 	}
 
-	// printMemoryArr(expandedMemory)
 	return total_res
 }
 
