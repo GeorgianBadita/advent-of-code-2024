@@ -165,6 +165,7 @@ func solvePartTwo(robots []Robot, seconds int, numRows int, numCols int) {
 			if len(r) > 30 {
 				fmt.Printf("After %d seconds\n", idx)
 				printInverted(robots, numRows, numCols)
+				break
 			}
 		}
 	}
