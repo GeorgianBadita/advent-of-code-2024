@@ -1,6 +1,7 @@
 package main
 
 import (
+	"aoc-2024/datastructures"
 	"bufio"
 	"fmt"
 	"os"
@@ -9,6 +10,11 @@ import (
 type Point struct {
 	x int
 	y int
+}
+
+type DoubleCell struct {
+	cell1 Point
+	cell2 Point
 }
 
 type DirType int
@@ -137,14 +143,12 @@ func moveColFromTo(grid *[][]rune, colIdx int, from int, to int, dir DirType) {
 
 }
 
-func applyDir(grid *[][]rune, currPoint Point, instruction rune, advanceCondition func(rune, rune, DirType) bool) Point {
-	dir := DIR_MAPPING[instruction]
+func applyDir(grid *[][]rune, currPoint Point, dir DirType, advanceCondition func(rune) bool) Point {
 	offset := DIR_TO_OFFSET[dir]
 
 	cP := Point{currPoint.x + offset.x, currPoint.y + offset.y}
-	firstVal := (*grid)[cP.x][cP.y]
 
-	for advanceCondition((*grid)[cP.x][cP.y], firstVal, dir) {
+	for advanceCondition((*grid)[cP.x][cP.y]) {
 		cP.x += offset.x
 		cP.y += offset.y
 	}
@@ -164,25 +168,127 @@ func applyDir(grid *[][]rune, currPoint Point, instruction rune, advanceConditio
 	return Point{currPoint.x + offset.x, currPoint.y + offset.y}
 }
 
-func partOneAdvance(c rune, _ rune, _ DirType) bool {
+func applyDirPartTwo(grid *[][]rune, currPoint Point, dir DirType) Point {
+	offset := DIR_TO_OFFSET[dir]
+	nextNode := Point{currPoint.x + offset.x, currPoint.y + offset.y}
+	var box DoubleCell
+
+	if (*grid)[nextNode.x][nextNode.y] == '.' {
+		(*grid)[nextNode.x][nextNode.y] = '@'
+		(*grid)[currPoint.x][currPoint.y] = '.'
+		return nextNode
+	}
+
+	if (*grid)[nextNode.x][nextNode.y] == '[' {
+		box = DoubleCell{nextNode, Point{nextNode.x, nextNode.y + 1}}
+	} else {
+		box = DoubleCell{Point{nextNode.x, nextNode.y - 1}, nextNode}
+	}
+
+	queue := datastructures.Queue{box}
+
+	allNodesRespectCondition := true
+
+	boxesToMove := map[DoubleCell]bool{}
+
+	for !queue.IsEmpty() {
+		n := queue.Dequeue()
+		node := n.(DoubleCell)
+
+		if isEmptySpace(*grid, node) {
+			continue
+		}
+
+		fmt.Println(node, string((*grid)[node.cell1.x][node.cell1.y]), string((*grid)[node.cell2.x][node.cell2.y]))
+		neighbours := getBoxNeighboursVertical(*grid, node, dir)
+		fmt.Println(neighbours)
+
+	out:
+		for _, adj := range neighbours {
+			if isBox(*grid, adj) {
+				queue.Enqueue(adj)
+			}
+
+			if containsWall(*grid, adj) {
+				allNodesRespectCondition = false
+				break out
+			}
+
+			if isEmptySpace(*grid, adj) {
+				boxesToMove[adj] = true
+			}
+			// fmt.Println(adj, string((*grid)[adj.cell1.x][adj.cell1.y]), string((*grid)[adj.cell2.x][adj.cell2.y]))
+		}
+	}
+
+	if !allNodesRespectCondition {
+		return currPoint
+	}
+
+	fmt.Println(allNodesRespectCondition)
+	fmt.Println(boxesToMove)
+	return nextNode
+}
+
+func isEmptySpace(grid [][]rune, b DoubleCell) bool {
+	return isLeftEmptySpace(grid, b) && isRightEmptySpace(grid, b)
+}
+
+func isLeftEmptySpace(grid [][]rune, b DoubleCell) bool {
+	return grid[b.cell1.x][b.cell1.y] == '.'
+}
+
+func isRightEmptySpace(grid [][]rune, b DoubleCell) bool {
+	return grid[b.cell2.x][b.cell2.y] == '.'
+}
+
+func isBox(grid [][]rune, b DoubleCell) bool {
+	return grid[b.cell1.x][b.cell1.y] == '[' && grid[b.cell2.x][b.cell2.y] == ']'
+}
+
+func containsWall(grid [][]rune, b DoubleCell) bool {
+	return grid[b.cell1.x][b.cell1.y] == '#' && grid[b.cell2.x][b.cell2.y] == '#'
+}
+
+func getBoxNeighboursVertical(grid [][]rune, b DoubleCell, d DirType) []DoubleCell {
+	if d == LEFT || d == RIGHT {
+		panic("Direction should be UP or DOWN here")
+	}
+	cell1V := grid[b.cell1.x][b.cell1.y]
+	cell2V := grid[b.cell2.x][b.cell2.y]
+
+	offset := DIR_TO_OFFSET[d]
+
+	directOffsetCell1 := Point{b.cell1.x + offset.x, b.cell1.y + offset.y}
+	directOffsetCell2 := Point{b.cell2.x + offset.x, b.cell2.y + offset.y}
+
+	// UP / DOWN simple case
+	// .. [] []
+	// [] .. []
+	if cell1V == grid[directOffsetCell1.x][directOffsetCell1.y] && cell2V == grid[directOffsetCell2.x][directOffsetCell2.y] {
+		return []DoubleCell{{cell1: directOffsetCell1, cell2: directOffsetCell2}}
+	}
+
+	// Complex cases
+	// [][] []    []
+	//  []   []  []
+	leftNeighbour := DoubleCell{cell1: Point{directOffsetCell1.x, directOffsetCell1.y - 1}, cell2: directOffsetCell1}
+	rightNeighbour := DoubleCell{cell1: directOffsetCell2, cell2: Point{directOffsetCell2.x, directOffsetCell2.y + 1}}
+	return []DoubleCell{leftNeighbour, rightNeighbour}
+}
+
+func partOneAdvance(c rune) bool {
 	return c == 'O'
 }
 
-func partTwoAdvance(c rune, first rune, dir DirType) bool {
-	if c != '[' && c != ']' {
-		return false
-	}
-
-	if dir == LEFT || dir == RIGHT {
-		return true
-	}
-
-	return c == first
+func partTwoAdvance(c rune) bool {
+	return c == '[' || c == ']'
 }
 
 func solvePartOne(grid [][]rune, startPoint Point, instructions string) int {
 	for _, instruction := range instructions {
-		startPoint = applyDir(&grid, startPoint, instruction, partOneAdvance)
+		dir := DIR_MAPPING[instruction]
+		startPoint = applyDir(&grid, startPoint, dir, partOneAdvance)
 	}
 
 	res := 0
@@ -219,7 +325,13 @@ func solvePartTwo(grid [][]rune, startPoint Point, instructions string) int {
 
 	for _, instruction := range instructions {
 		fmt.Println("Dir " + string(instruction))
-		startPoint = applyDir(&grid, startPoint, instruction, partTwoAdvance)
+		dir := DIR_MAPPING[instruction]
+		if dir == LEFT || dir == RIGHT {
+			startPoint = applyDir(&grid, startPoint, dir, partTwoAdvance)
+		} else {
+			startPoint = applyDirPartTwo(&grid, startPoint, dir)
+		}
+
 		for _, row := range grid {
 			fmt.Println(string(row))
 		}
@@ -255,21 +367,21 @@ func main() {
 		panic("Error reading from " + IN_FILE_PATH)
 	}
 
-	grid, startPoint, instructions := parseInput(data)
+	grid, _, instructions := parseInput(data)
 
-	if len(os.Args) != 2 {
-		panic("Exactly one arg is expected")
-	}
-	arg := os.Args[1]
+	// if len(os.Args) != 2 {
+	// 	panic("Exactly one arg is expected")
+	// }
+	// arg := os.Args[1]
 
-	if arg != "1" && arg != "2" {
-		panic("Arg can only be 1 or 2 for part 1 ore part 2 of the problem respectively")
-	}
+	// if arg != "1" && arg != "2" {
+	// 	panic("Arg can only be 1 or 2 for part 1 ore part 2 of the problem respectively")
+	// }
 
-	if arg == "1" {
-		println(solvePartOne(grid, startPoint, instructions))
-	} else {
-		newGrid, newStart := doubleGrid(grid)
-		println(solvePartTwo(newGrid, newStart, instructions))
-	}
+	// if arg == "1" {
+	// 	println(solvePartOne(grid, startPoint, instructions))
+	// } else {
+	newGrid, newStart := doubleGrid(grid)
+	println(solvePartTwo(newGrid, newStart, instructions))
+	// }
 }
