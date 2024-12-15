@@ -104,6 +104,39 @@ func doubleGrid(grid [][]rune) ([][]rune, Point) {
 	return newGrid, newStart
 }
 
+func moveLineFromTo(line *[]rune, from int, to int, dir DirType) {
+	if dir == UP || dir == DOWN {
+		panic("Dir must be LEFT or RIGHT for line ops")
+	}
+
+	invDirOffset := DIR_TO_OFFSET[LEFT]
+
+	if dir == LEFT {
+		invDirOffset = DIR_TO_OFFSET[RIGHT]
+	}
+
+	for start := from; start != to; start += invDirOffset.y {
+		(*line)[start] = (*line)[start+invDirOffset.y]
+	}
+}
+
+func moveColFromTo(grid *[][]rune, colIdx int, from int, to int, dir DirType) {
+	if dir == LEFT || dir == RIGHT {
+		panic("Dir must be UP or DOWN for col ops")
+	}
+
+	invDirOffset := DIR_TO_OFFSET[UP]
+
+	if dir == UP {
+		invDirOffset = DIR_TO_OFFSET[DOWN]
+	}
+
+	for start := from; start != to; start += invDirOffset.x {
+		(*grid)[start][colIdx] = (*grid)[start+invDirOffset.x][colIdx]
+	}
+
+}
+
 func applyDir(grid *[][]rune, currPoint Point, instruction rune, advanceCondition func(rune, rune, DirType) bool) Point {
 	dir := DIR_MAPPING[instruction]
 	offset := DIR_TO_OFFSET[dir]
@@ -120,57 +153,10 @@ func applyDir(grid *[][]rune, currPoint Point, instruction rune, advanceConditio
 		return currPoint
 	}
 
-	if firstVal == '[' && (*grid)[cP.x][cP.y+1] != '.' {
-		return currPoint
-	}
-
-	if firstVal == ']' && (*grid)[cP.x][cP.y-1] != '.' {
-		return currPoint
-	}
-
-	if dir == RIGHT {
-		invDirOffset := DIR_TO_OFFSET[LEFT]
-		for start := cP.y; start != currPoint.y; start += invDirOffset.y {
-			(*grid)[currPoint.x][start] = (*grid)[currPoint.x][start+invDirOffset.y]
-		}
-	} else if dir == LEFT {
-		invDirOffset := DIR_TO_OFFSET[RIGHT]
-		for start := cP.y; start != currPoint.y; start += invDirOffset.y {
-			(*grid)[currPoint.x][start] = (*grid)[currPoint.x][start+invDirOffset.y]
-		}
-	} else if dir == DOWN {
-		invDirOffset := DIR_TO_OFFSET[UP]
-		for start := cP.x; start != currPoint.x; start += invDirOffset.x {
-			(*grid)[start][currPoint.y] = (*grid)[start+invDirOffset.x][currPoint.y]
-		}
-		if firstVal == ']' {
-			for start := cP.x; start != currPoint.x; start += invDirOffset.x {
-				(*grid)[start][currPoint.y-1] = (*grid)[start+invDirOffset.x][currPoint.y-1]
-			}
-			(*grid)[currPoint.x+offset.x][currPoint.y+offset.y-1] = '.'
-		} else if firstVal == '[' {
-			for start := cP.x; start != currPoint.x; start += invDirOffset.x {
-				(*grid)[start][currPoint.y+1] = (*grid)[start+invDirOffset.x][currPoint.y+1]
-			}
-			(*grid)[currPoint.x+offset.x][currPoint.y+offset.y+1] = '.'
-		}
+	if dir == RIGHT || dir == LEFT {
+		moveLineFromTo(&(*grid)[currPoint.x], cP.y, currPoint.y, dir)
 	} else {
-		invDirOffset := DIR_TO_OFFSET[DOWN]
-		for start := cP.x; start != currPoint.x; start += invDirOffset.x {
-			(*grid)[start][currPoint.y] = (*grid)[start+invDirOffset.x][currPoint.y]
-		}
-
-		if firstVal == ']' {
-			for start := cP.x; start != currPoint.x; start += invDirOffset.x {
-				(*grid)[start][currPoint.y-1] = (*grid)[start+invDirOffset.x][currPoint.y-1]
-			}
-			(*grid)[currPoint.x+offset.x][currPoint.y+offset.y-1] = '.'
-		} else if firstVal == '[' {
-			for start := cP.x; start != currPoint.x; start += invDirOffset.x {
-				(*grid)[start][currPoint.y+1] = (*grid)[start+invDirOffset.x][currPoint.y+1]
-			}
-			(*grid)[currPoint.x+offset.x][currPoint.y+offset.y+1] = '.'
-		}
+		moveColFromTo(grid, currPoint.y, cP.x, currPoint.x, dir)
 	}
 
 	(*grid)[currPoint.x][currPoint.y] = '.'
@@ -269,21 +255,21 @@ func main() {
 		panic("Error reading from " + IN_FILE_PATH)
 	}
 
-	grid, _, instructions := parseInput(data)
+	grid, startPoint, instructions := parseInput(data)
 
-	// if len(os.Args) != 2 {
-	// 	panic("Exactly one arg is expected")
-	// }
-	// arg := os.Args[1]
+	if len(os.Args) != 2 {
+		panic("Exactly one arg is expected")
+	}
+	arg := os.Args[1]
 
-	// if arg != "1" && arg != "2" {
-	// 	panic("Arg can only be 1 or 2 for part 1 ore part 2 of the problem respectively")
-	// }
+	if arg != "1" && arg != "2" {
+		panic("Arg can only be 1 or 2 for part 1 ore part 2 of the problem respectively")
+	}
 
-	// if arg == "1" {
-	// 	println(solvePartOne(grid, startPoint, instructions))
-	// } else {
-	newGrid, newStart := doubleGrid(grid)
-	println(solvePartTwo(newGrid, newStart, instructions))
-	// }
+	if arg == "1" {
+		println(solvePartOne(grid, startPoint, instructions))
+	} else {
+		newGrid, newStart := doubleGrid(grid)
+		println(solvePartTwo(newGrid, newStart, instructions))
+	}
 }
