@@ -238,11 +238,11 @@ func printGrid(grid [][]rune) {
 	}
 }
 
-func pathCost(graph map[PointWithDir][]Node, path []Point) int {
-	cost := 0
-	firstNode := path[len(path)-1]
+// func pathCost(graph map[PointWithDir][]Node, path []Point) int {
+// 	cost := 0
+// 	firstNode := path[len(path)-1]
 
-}
+// }
 
 func solvePartTwo(grid [][]rune, graph map[PointWithDir][]Node, start PointWithDir, end Point) int {
 	_, prev := dijkstra(graph, start)
@@ -256,6 +256,8 @@ func solvePartTwo(grid [][]rune, graph map[PointWithDir][]Node, start PointWithD
 	r := 0
 	fmt.Println(len(sols))
 	for _, s := range sols {
+		fmt.Println(len(s))
+
 		copyGrid := [][]rune{}
 		for _, row := range grid {
 			copyGrid = append(copyGrid, append([]rune{}, row...))
