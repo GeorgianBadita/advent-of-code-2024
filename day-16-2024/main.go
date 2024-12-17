@@ -125,11 +125,16 @@ func makeGraph(data []string) (map[PointWithDir][]Node, PointWithDir, Point) {
 			neighbours := getAdjWithDir(data, currPoint)
 
 			for _, adj := range neighbours {
-				if data[adj.p.x][adj.p.y] == '#' && currPoint != start.p {
+				currNode := PointWithDir{p: currPoint, d: adj.d}
+
+				if _, ok := res[currNode]; !ok {
+					res[currNode] = []Node{}
+				}
+
+				if data[adj.p.x][adj.p.y] == '#' {
 					continue
 				}
 
-				currNode := PointWithDir{p: currPoint, d: adj.d}
 				pWithDir := PointWithDir{p: adj.p, d: INV_DIR[adj.d]}
 				res[currNode] = append(res[currNode], Node{pWithDir, 1})
 			}
@@ -156,13 +161,12 @@ func makeGraph(data []string) (map[PointWithDir][]Node, PointWithDir, Point) {
 	return res, start, end
 }
 
-func dijkstra(graph map[PointWithDir][]Node, start PointWithDir) (map[PointWithDir]int, map[Point]map[Point]bool) {
+func dijkstra(graph map[PointWithDir][]Node, start PointWithDir) (map[PointWithDir]int, map[PointWithDir]map[PointWithDir]bool) {
 	dist := map[PointWithDir]int{}
-	prev := map[Point]map[Point]bool{}
+	prev := map[PointWithDir]map[PointWithDir]bool{}
 
 	for node := range graph {
 		dist[node] = math.MaxInt
-		prev[node.p] = map[Point]bool{}
 	}
 
 	dist[start] = 0
@@ -182,13 +186,17 @@ func dijkstra(graph map[PointWithDir][]Node, start PointWithDir) (map[PointWithD
 			if dist[adjNode.adj] > dist[node]+adjNode.cost {
 				dist[adjNode.adj] = dist[node] + adjNode.cost
 				pq.Insert(Node{adjNode.adj, dist[adjNode.adj]})
-				if _, ok := prev[adjNode.adj.p][node.p]; !ok && node.p != adjNode.adj.p {
-					prev[adjNode.adj.p][node.p] = true
+
+				if _, ok := prev[adjNode.adj]; !ok {
+					prev[adjNode.adj] = map[PointWithDir]bool{}
 				}
+				prev[adjNode.adj][node] = true
+
 			} else if dist[adjNode.adj] == dist[node]+adjNode.cost {
-				if _, ok := prev[adjNode.adj.p][node.p]; !ok && node.p != adjNode.adj.p {
-					prev[adjNode.adj.p][node.p] = true
+				if _, ok := prev[adjNode.adj]; !ok {
+					prev[adjNode.adj] = map[PointWithDir]bool{}
 				}
+				prev[adjNode.adj][node] = true
 			}
 		}
 	}
@@ -214,7 +222,7 @@ func solvePartOne(graph map[PointWithDir][]Node, start PointWithDir, end Point) 
 	return res
 }
 
-func allPathsFromAtoB(dijkstraGraph map[Point]map[Point]bool, sols *[][]Point, usedNodes map[Point]bool, currPath []Point, targetNode Point) {
+func allPathsFromAtoB(dijkstraGraph map[PointWithDir]map[PointWithDir]bool, sols *[][]PointWithDir, usedNodes map[PointWithDir]bool, currPath []PointWithDir, targetNode PointWithDir) {
 	lastNode := currPath[len(currPath)-1]
 	if lastNode == targetNode {
 		*sols = append(*sols, currPath)
@@ -222,9 +230,9 @@ func allPathsFromAtoB(dijkstraGraph map[Point]map[Point]bool, sols *[][]Point, u
 		for adj := range dijkstraGraph[lastNode] {
 			if _, ok := usedNodes[adj]; !ok {
 				currPath = append(currPath, adj)
-				// usedNodes[adj] = true
+				usedNodes[adj] = true
 				allPathsFromAtoB(dijkstraGraph, sols, usedNodes, currPath, targetNode)
-				// usedNodes[adj] = false
+				usedNodes[adj] = false
 				currPath = currPath[:len(currPath)-1]
 			}
 		}
@@ -237,36 +245,57 @@ func printGrid(grid [][]rune) {
 	}
 }
 
-// func pathCost(graph map[PointWithDir][]Node, path []Point) int {
-// 	cost := 0
-// 	firstNode := path[len(path)-1]
+func pathCost(graph map[PointWithDir][]Node, path []PointWithDir) int {
+	cost := 0
+	currNode := path[len(path)-1]
 
-// }
+	for idx := len(path) - 2; idx >= 0; idx-- {
+		nextNode := path[idx]
+		adj := graph[currNode]
+		found := false
+		for _, node := range adj {
+			if node.adj == nextNode {
+				found = true
+				cost += node.cost
+				break
+			}
+		}
+		if !found {
+			// panic("Path is invalid!")
+		}
+		currNode = nextNode
+	}
+
+	return cost
+}
 
 func solvePartTwo(grid [][]rune, graph map[PointWithDir][]Node, start PointWithDir, end Point) int {
 	_, prev := dijkstra(graph, start)
 
 	// fmt.Println(prev)
 
-	sols := [][]Point{}
-	allPathsFromAtoB(prev, &sols, map[Point]bool{end: true}, []Point{end}, start.p)
+	sols := [][]PointWithDir{}
+	allPathsFromAtoB(prev, &sols, map[PointWithDir]bool{{end, S}: true}, []PointWithDir{{end, S}}, start)
+	// allPathsFromAtoB(prev, &sols, map[PointWithDir]bool{{end, V}: true}, []PointWithDir{{end, V}}, start.p)
+	// allPathsFromAtoB(prev, &sols, map[PointWithDir]bool{{end, E}: true}, []PointWithDir{{end, E}}, start.p)
+	// allPathsFromAtoB(prev, &sols, map[PointWithDir]bool{{end, N}: true}, []PointWithDir{{end, N}}, start.p)
 
 	flatten := map[Point]bool{}
 	r := 0
-	fmt.Println(len(sols))
+	fmt.Println("Num of solfs: ", len(sols))
 	for _, s := range sols {
-		fmt.Println(len(s))
-
+		fmt.Println("Length of sol: ", len(s))
+		fmt.Println("Path cost: ", pathCost(graph, s))
 		copyGrid := [][]rune{}
 		for _, row := range grid {
 			copyGrid = append(copyGrid, append([]rune{}, row...))
 		}
 		for _, p := range s {
-			if _, ok := flatten[p]; !ok {
+			if _, ok := flatten[p.p]; !ok {
 				r++
-				flatten[p] = true
+				flatten[p.p] = true
 			}
-			copyGrid[p.x][p.y] = 'O'
+			copyGrid[p.p.x][p.p.y] = 'O'
 		}
 		printGrid(copyGrid)
 		fmt.Println()
@@ -288,22 +317,22 @@ func main() {
 
 	// fmt.Println(graph, start, end)
 
-	if len(os.Args) != 2 {
-		panic("Exactly one arg is expected")
-	}
-	arg := os.Args[1]
+	// if len(os.Args) != 2 {
+	// 	panic("Exactly one arg is expected")
+	// }
+	// arg := os.Args[1]
 
-	if arg != "1" && arg != "2" {
-		panic("Arg can only be 1 or 2 for part 1 ore part 2 of the problem respectively")
-	}
+	// if arg != "1" && arg != "2" {
+	// 	panic("Arg can only be 1 or 2 for part 1 ore part 2 of the problem respectively")
+	// }
 
-	if arg == "1" {
-		println(solvePartOne(graph, start, end))
-	} else {
-		grid := [][]rune{}
-		for _, row := range data {
-			grid = append(grid, []rune(row))
-		}
-		println(solvePartTwo(grid, graph, start, end))
+	// if arg == "1" {
+	// 	println(solvePartOne(graph, start, end))
+	// } else {
+	grid := [][]rune{}
+	for _, row := range data {
+		grid = append(grid, []rune(row))
 	}
+	println(solvePartTwo(grid, graph, start, end))
+	// }
 }
