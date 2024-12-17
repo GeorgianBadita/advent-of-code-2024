@@ -113,10 +113,6 @@ func makeGraph(data []string) (map[PointWithDir][]Node, PointWithDir, Point) {
 
 	for idx := 0; idx < len(data); idx++ {
 		for jdx := 0; jdx < len(data[0]); jdx++ {
-			if data[idx][jdx] == '#' {
-				continue
-			}
-
 			if data[idx][jdx] == 'S' {
 				start = PointWithDir{p: Point{idx, jdx}, d: E}
 			}
@@ -203,16 +199,19 @@ func dijkstra(graph map[PointWithDir][]Node, start PointWithDir) (map[PointWithD
 func solvePartOne(graph map[PointWithDir][]Node, start PointWithDir, end Point) int {
 	dist, _ := dijkstra(graph, start)
 
+	res := math.MaxInt
+
 	for node, dst := range dist {
 		if node.p == end {
-			if dst == math.MaxInt {
-				return -1
-			}
-			return dst
+			res = int(math.Min(float64(res), float64(dst)))
 		}
 	}
 
-	return -1
+	if res == math.MaxInt {
+		return -1
+	}
+
+	return res
 }
 
 func allPathsFromAtoB(dijkstraGraph map[Point]map[Point]bool, sols *[][]Point, usedNodes map[Point]bool, currPath []Point, targetNode Point) {
