@@ -12,11 +12,6 @@ type Point struct {
 	y int
 }
 
-type Cheat struct {
-	first  Point
-	second Point
-}
-
 func readFileAsString(filePath string) ([]string, error) {
 	file, err := os.Open(filePath)
 
@@ -104,93 +99,89 @@ func getValidNeighbours(grid [][]int, p Point) []Point {
 	return neighbours
 }
 
-func bfs(grid [][]int, start Point, end Point, validCheat *Cheat) (int, map[Point]bool) {
+func bfs(grid [][]int, start Point, end Point) [][]int {
+	clonedGrid := [][]int{}
+
+	for _, row := range grid {
+		clonedGrid = append(clonedGrid, append([]int{}, row...))
+	}
+
 	queue := datastructures.Queue{start}
-	grid[start.x][start.y] = 1
+	dist := [][]int{}
 
-	potentialCheats := map[Point]bool{}
-	potentialCheats[start] = true
-	usedFirst := false
+	for idx := 0; idx < len(clonedGrid); idx++ {
+		row := []int{}
+		for jdx := 0; jdx < len(clonedGrid[0]); jdx++ {
+			row = append(row, -1)
+		}
+		dist = append(dist, row)
+	}
 
-	for !queue.IsEmpty() {
+	dist[start.x][start.y] = 0
+
+	for {
 		n := queue.Dequeue()
 		node := n.(Point)
-
-		if validCheat != nil {
-			if node == validCheat.second && !usedFirst {
-				return datastructures.Pow(10, 9), nil
-			}
-			if node == validCheat.first {
-				usedFirst = true
-			}
-		}
-
 		if node == end {
-			potentialCheats[end] = true
-			return grid[node.x][node.y] - 1, potentialCheats
+			return dist
 		}
 
-		for _, adj := range getValidNeighbours(grid, node) {
-			if grid[adj.x][adj.y] == 0 {
-				grid[adj.x][adj.y] = 1 + grid[node.x][node.y]
+		for _, adj := range getValidNeighbours(clonedGrid, node) {
+			if clonedGrid[adj.x][adj.y] != -1 && dist[adj.x][adj.y] == -1 {
+				clonedGrid[adj.x][adj.y] = -1
+				dist[adj.x][adj.y] = 1 + dist[node.x][node.y]
 				queue.Enqueue(adj)
-			} else {
-				potentialCheats[adj] = true
 			}
 		}
 	}
-	panic(fmt.Sprintf("There is no path from %v to %v", start, end))
 }
 
 func solvePartOne(grid [][]int, start Point, end Point) int {
-	matrixClone := [][]int{}
-	for _, row := range grid {
-		matrixClone = append(matrixClone, append([]int{}, row...))
-	}
-
-	validCheats := map[Cheat]bool{}
-
-	baseLine, potentialCheats := bfs(matrixClone, start, end, nil)
-
-	for potentialCheat := range potentialCheats {
-		neighbours := getValidNeighbours(grid, potentialCheat)
-		for _, adj := range neighbours {
-			if grid[adj.x][adj.y] == -1 {
+	dist := bfs(grid, start, end)
+	cnt := 0
+	for idx := 0; idx < len(grid); idx++ {
+		for jdx := 0; jdx < len(grid[0]); jdx++ {
+			if grid[idx][jdx] == -1 {
 				continue
 			}
-			first := potentialCheat
-			second := Point{adj.x, adj.y}
-			cheat := Cheat{first, second}
-			_, firstSecond := validCheats[Cheat{first, second}]
-			_, secondFirst := validCheats[Cheat{second, first}]
+			for _, adj := range []Point{{idx + 2, jdx}, {idx + 1, jdx + 1}, {idx, jdx + 2}, {idx - 1, jdx + 1}} {
+				if !validCoords(grid, adj) || grid[adj.x][adj.y] == -1 {
+					continue
+				}
+				if datastructures.Abs(dist[idx][jdx]-dist[adj.x][adj.y]) >= 102 {
+					cnt += 1
+				}
+			}
+		}
+	}
+	return cnt
+}
 
-			if firstSecond || secondFirst {
+func solvePartTwo(grid [][]int, start Point, end Point) int {
+	dist := bfs(grid, start, end)
+	cnt := 0
+	for idx := 0; idx < len(grid); idx++ {
+		for jdx := 0; jdx < len(grid[0]); jdx++ {
+			if grid[idx][jdx] == -1 {
 				continue
 			}
-
-			validCheats[cheat] = true
+			for rd := 2; rd <= 20; rd++ {
+				for dr := 0; dr <= rd; dr++ {
+					cd := rd - dr
+					for adj := range map[Point]bool{{idx + dr, jdx + cd}: true, {idx - dr, jdx - cd}: true, {idx + dr, jdx - cd}: true, {idx - dr, jdx + cd}: true} {
+						if !validCoords(grid, adj) || grid[adj.x][adj.y] == -1 {
+							continue
+						}
+						if dist[idx][jdx]-dist[adj.x][adj.y] >= 100+rd {
+							cnt += 1
+						}
+					}
+				}
+			}
 
 		}
 	}
-
-	bestCheats := 0
-	for validCheat := range validCheats {
-		matrixClone := [][]int{}
-		for _, row := range grid {
-			matrixClone = append(matrixClone, append([]int{}, row...))
-		}
-
-		matrixClone[validCheat.first.x][validCheat.first.y] = 0
-		matrixClone[validCheat.second.x][validCheat.second.y] = 0
-
-		currRes, _ := bfs(matrixClone, start, end, &validCheat)
-
-		if baseLine-currRes >= 100 {
-			bestCheats += 1
-		}
-
-	}
-	return bestCheats
+	return cnt
 }
 
 func main() {
@@ -215,6 +206,6 @@ func main() {
 	if arg == "1" {
 		println(solvePartOne(grid, start, end))
 	} else {
-		// placeholder for part 2
+		println(solvePartTwo(grid, start, end))
 	}
 }
